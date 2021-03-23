@@ -3,9 +3,9 @@
   "dependencies": {
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
-    "pg": "^7.18.2",
+    "pg": "^8.5.1",
     "cors": "^2.8.5",
-    "morgan": "^1.9.1"
+    "morgan": "^1.10.0"
   },
   "scripts": {
     "run": "node main.js",
