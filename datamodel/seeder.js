@@ -1,4 +1,4 @@
-const Car = require('./exemple')
+const Car = require('./user')
 
 module.exports = (exempleService) => {
     return new Promise(async (resolve, reject) => {
