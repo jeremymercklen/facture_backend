@@ -70,6 +70,39 @@ module.exports = (app, svc, addressSvc, jwt) => {
         }
     })
 
+    app.post('/user', async (req, res) => {
+        const {
+            firstname, lastname, birthday, email, phone,
+            turnover, chargerate, password,
+            line1, line2, line3, postalcode, city, country
+        } = req.body
+
+        if (!firstname || !lastname || !birthday || !email ||
+            !phone || turnover === undefined || chargerate === undefined ||
+            !password || !line1 || !postalcode || !city || !country) {
+            return res.status(400).json({ message: 'Missing required fields' })
+        }
+
+        try {
+            const existingUser = await svc.findByEmail(email)
+            if (existingUser) {
+                return res.status(409).json({ message: 'Email already exists' })
+            }
+
+            console.log('Creating new user:', email)
+            const address = await addressSvc.insert(line1, line2, line3, postalcode, city, country)
+            const userId = await svc.insert(
+                firstname, lastname, birthday, address.id,
+                email, phone, turnover, chargerate, password
+            )
+
+            res.status(201).json({ token: jwt.generateJWT(userId) })
+        } catch (e) {
+            console.log('User creation error:', e)
+            res.status(500).json({ message: 'Internal server error' })
+        }
+    })
+
     app.put("/user", jwt.validateJWT, async (req, res) => {
         try {
             const user = await svc.update(req.user.id, {
