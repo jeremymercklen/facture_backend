@@ -6,27 +6,39 @@ module.exports = class QuoteDAO extends BaseDAO {
         super(db, "quote")
     }
 
-    create() {
+    async createTable() {
         return this.db.query(`
-        CREATE TYPE IF NOT EXISTS quote_state AS ENUM ('draft', 'sent', 'accepted', 'refused');
-        CREATE TABLE quote (
-            id SERIAL PRIMARY KEY NOT NULL,
-            number INT NOT NULL,
-            state quote_state NOT NULL,
-            creationdate DATE NOT NULL,
-            projectid INT REFERENCES project (id) NOT NULL
-        )`
-        )
+            CREATE TABLE quote
+            (
+                id           SERIAL PRIMARY KEY          NOT NULL,
+                state        VARCHAR(15)                 NOT NULL CHECK (
+                    state IN ('draft', 'sent', 'accepted', 'refused')
+                    ),
+                projectid    INT REFERENCES project (id) NOT NULL,
+                creationdate DATE                        NOT NULL DEFAULT CURRENT_DATE
+            )
+        `)
     }
 
     async insert(quote) {
         const result = await this.db.query(
-            `INSERT INTO quote(number, state, creationdate, projectid)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id`,
-            [quote.number, quote.state, quote.creationdate, quote.projectid]
+            `INSERT INTO quote (state, projectid)
+         VALUES ($1, $2)
+         RETURNING *`,
+            [quote.state, quote.projectid]
         )
-        return result.rows[0].id
+        return this.transformRow(result.rows[0])
+    }
+
+    async update(quote) {
+        const result = await this.db.query(
+            `UPDATE quote
+         SET state = $1
+         WHERE id = $2 AND projectid = $3
+         RETURNING *`,
+            [quote.state, quote.id, quote.projectid]
+        )
+        return this.transformRow(result.rows[0])
     }
 
     async findById(id) {
@@ -34,28 +46,31 @@ module.exports = class QuoteDAO extends BaseDAO {
             `SELECT * FROM quote WHERE id = $1`,
             [id]
         )
-        if (result.rows.length === 0) {
-            return null
-        }
-        const q = result.rows[0]
-        return new Quote(q.id, q.number, q.state, q.creationdate, q.projectid)
+        return this.transformRow(result.rows[0])
     }
 
-    async findAll() {
-        const result = await this.db.query('SELECT * FROM quote')
-        return result.rows.map(q => new Quote(q.id, q.number, q.state, q.creationdate, q.projectid))
+    async findByProjectId(projectId) {
+        const result = await this.db.query(
+            `SELECT * FROM quote WHERE projectid = $1`,
+            [projectId]
+        )
+        return result.rows.map(row => this.transformRow(row))
     }
 
-    async update(quote) {
+    async delete(id, projectId) {
         await this.db.query(
-            `UPDATE quote
-             SET number = $1, state = $2, creationdate = $3, projectid = $4
-             WHERE id = $5`,
-            [quote.number, quote.state, quote.creationdate, quote.projectid, quote.id]
+            `DELETE FROM quote WHERE id = $1 AND projectid = $2`,
+            [id, projectId]
         )
     }
 
-    async delete(id) {
-        await this.db.query('DELETE FROM quote WHERE id = $1', [id])
+    transformRow(row) {
+        if (!row) return null
+        return new Quote(
+            row.id,
+            row.state,
+            row.creationdate,
+            row.projectid
+        )
     }
 }

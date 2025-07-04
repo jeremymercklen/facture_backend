@@ -6,20 +6,28 @@ module.exports = class AddressDAO extends BaseDAO {
         super(db, "address")
     }
 
-    create() {
-        return this.db.query(
-            "CREATE TABLE address (id SERIAL PRIMARY KEY NOT NULL, street TEXT NOT NULL, postalcode TEXT NOT NULL, city TEXT NOT NULL)"
-        )
+    async createTable() {
+        await this.db.query(`
+            CREATE TABLE address(
+                id SERIAL PRIMARY KEY,
+                line1 TEXT NOT NULL,
+                line2 TEXT,
+                line3 TEXT,
+                postalcode INT NOT NULL,
+                city TEXT NOT NULL,
+                country TEXT NOT NULL
+            )
+        `)
     }
 
     async insert(address) {
         const result = await this.db.query(
-            `INSERT INTO address(street, postalcode, city)
-             VALUES ($1, $2, $3)
-             RETURNING id`,
-            [address.street, address.postalcode, address.city]
+            `INSERT INTO address(line1, line2, line3, postalcode, city, country)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [address.line1, address.line2, address.line3, address.postalcode, address.city, address.country]
         )
-        return result.rows[0].id
+        return result.rows[0]
     }
 
     async findById(id) {
@@ -27,25 +35,23 @@ module.exports = class AddressDAO extends BaseDAO {
             `SELECT * FROM address WHERE id = $1`,
             [id]
         )
-        if (result.rows.length === 0) {
-            return null
-        }
-        const a = result.rows[0]
-        return new Address(a.id, a.street, a.postalcode, a.city)
+        return result.rows[0] || null
     }
 
     async findAll() {
         const result = await this.db.query('SELECT * FROM address')
-        return result.rows.map(a => new Address(a.id, a.street, a.postalcode, a.city))
+        return result.rows
     }
 
     async update(address) {
-        await this.db.query(
+        const result = await this.db.query(
             `UPDATE address
-             SET street = $1, postalcode = $2, city = $3
-             WHERE id = $4`,
-            [address.street, address.postalcode, address.city, address.id]
+             SET line1 = $1, line2 = $2, line3 = $3, postalcode = $4, city = $5, country = $6
+             WHERE id = $7
+             RETURNING *`,
+            [address.line1, address.line2, address.line3, address.postalcode, address.city, address.country, address.id]
         )
+        return result.rows[0] || null
     }
 
     async delete(id) {

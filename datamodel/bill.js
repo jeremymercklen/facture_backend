@@ -1,5 +1,12 @@
 module.exports = class Bill {
-    constructor(id,number, state, paymentlimitdate, paymenttype, paymentdate, note, quoteid) {
+    static STATES = {
+        DRAFT: 'draft',
+        EDITED: 'edited',
+        SENT: 'sent',
+        PAID: 'paid'
+    }
+
+    constructor(id, number, state, paymentlimitdate, paymenttype, paymentdate, note, quoteid) {
         this.id = id
         this.number = number
         this.state = state
@@ -7,6 +14,6 @@ module.exports = class Bill {
         this.paymenttype = paymenttype
         this.paymentdate = paymentdate
         this.note = note
-        this.quoteid = quoteid
+        this.projectid = quoteid
     }
 }

@@ -1,0 +1,40 @@
+version: '3.1'
+services:
+  nodejs:
+    depends_on:
+      - postgresql
+    container_name: nodejs
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3333:3333"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - CONNECTION_STRING=postgresql://tpadmin:tpadmin@postgresql:5432/tpadmin
+      - PORT=3333
+      - NODE_ENV=development
+    command: npm run run-server
+    networks:
+      - app-network
+  postgresql:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: FACTURATION_BD
+      POSTGRES_USER: USERPOSTGRESQL
+      POSTGRES_PASSWORD: MONMOTDEPASSE
+    volumes:
+      - data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+volumes:
+  data:
+
+networks:
+  app-network:
+    driver: bridge
